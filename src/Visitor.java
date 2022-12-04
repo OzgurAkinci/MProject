@@ -1,0 +1,41 @@
+public interface Visitor  {
+  public void visit(Stm s);
+  public void visit(LStm s);
+  public void visit(AStm s);
+  public void visit(PStm s);
+  //public void visit(Function f);
+  public Object visit(Exp e);
+  public Object visit(Header e);
+  public Object visit(Plus e);
+  public Object visit(Minus e);
+  public Object visit(Times e);
+  public Object visit(Divide e);
+  public Object visit(Mod e);
+  public Object visit(Power e);
+  public Object visit(Var e);
+  public Object visit(Num e);
+  public Object visit(DNum e);
+  public Object visit(Str e);
+  public Object visit(Ln e);
+  public Object visit(Log e);
+  public Object visit(Ep e);
+  public Object visit(Sin e);
+  public Object visit(Cos e);
+  public Object visit(Tan e);
+  public Object visit(Abs e);
+  public Object visit(Sqrt e);
+  public Object visit(Round e);
+  public Object visit(DrvExp e);
+  public boolean visit(BExp e);
+  public boolean visit(EQExp e);
+  public boolean visit(NEExp e);
+  public boolean visit(LEExp e);
+  public boolean visit(LTExp e);
+  public boolean visit(GEExp e);
+  public boolean visit(GTExp e);
+  public boolean visit(AndExp e);
+  public boolean visit(OrExp e);
+  public boolean visit(NotExp e);
+  public boolean visit(BNum e);
+}
+

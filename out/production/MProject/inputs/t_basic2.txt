@@ -1,0 +1,8 @@
+f(x)=x*ln(x)+exp(1-x)-1
+g(x)=exp(-2*x)-x^2-2*x
+
+FIX(x) { y=g(x); print(x,y); print(); }
+        | abs(y-x) < 0.001 = y
+        | otherwise        = FIX(y)
+
+main() { print("x  ", "y"); print(); } = FIX(2.0)

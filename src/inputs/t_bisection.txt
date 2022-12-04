@@ -1,0 +1,10 @@
+f(x) = exp(x)-3^x+4
+f2(x) = x^3+4*x^2-10
+
+BS(x,y) { z=(x+y)/2; print(x,z,y); print(); }
+        | abs(x-z) < 0.001 = z
+        | f(x) * f(z) < 0  = BS(x,z)
+        | otherwise        = BS(z,y)
+
+main() { print("x  ", "z  ", "y"); print(); } = BS(1.0,3.0)
+

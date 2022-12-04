@@ -1,0 +1,13 @@
+f(x) = exp(x)-3^x+4
+g(x) = exp(x)-3^x*ln(3)
+
+NR(x) { y=x-f(x)/drv(g(x),x); print(x,y); print(); }
+        | abs(y-x) < 0.001 = y
+        | otherwise        = NR(y)
+
+NR2(x) { y=x-f(x)/g(x); print(x,y); print(); }
+        | abs(y-x) < 0.001 = y
+        | otherwise        = NR2(y)
+
+main() { print("x  ", "y"); print(); } = NR(1.0)
+
