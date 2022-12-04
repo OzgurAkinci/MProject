@@ -2,9 +2,9 @@
 
 #### Compile with Java
 ```
-$ javacc App.jj
+$ javacc MProject.jj
 ```
 #### Run
 ```
-$ java Interpreter
+$ java Main
 ```

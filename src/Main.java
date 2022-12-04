@@ -1,7 +1,7 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-public class Interpreter {
+public class Main {
   public static void main(String[] args) {
     try {
       //Program p = new Parser(System.in).Start();

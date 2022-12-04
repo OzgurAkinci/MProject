@@ -1,0 +1,264 @@
+options {
+  DEBUG_PARSER = false;
+}
+
+PARSER_BEGIN(Parser)
+  public class Parser { }
+PARSER_END(Parser)
+
+TOKEN: {
+   <PLUS: "+">
+ | <MINUS: "-">
+ | <TIMES: "*">
+ | <DIVIDE: "/">
+ | <MOD: "%">
+ | <POWER: "^">
+ | <AND: "&&">
+ | <OR: "||">
+ | <NOT: "!">
+ | <AEQ: "=">
+ | <EQ: "==">
+ | <NE: "/=">
+ | <LE: "<">
+ | <LT: "<=">
+ | <GT: ">=">
+ | <GE: ">">
+ | <COMMA: ",">
+ | <SEMI: ";">
+ | <GUARD: "|">
+ | <LCURLY: "{">
+ | <RCURLY: "}">
+ | <LPAREN: "(">
+ | <RPAREN: ")">
+ | <LN: "ln">
+ | <LOG: "log">
+ | <EXP: "exp">
+ | <SIN: "sin">
+ | <COS: "cos">
+ | <TAN: "tan">
+ | <ABS: "abs">
+ | <SQRT: "sqrt">
+ | <ROUND: "round">
+ | <DRV: "drv">
+ | <PRINT: "print">
+ | <OTHER: "otherwise">
+ | <ID: (["a"-"z","A"-"Z"])(["a"-"z","A"-"Z","0"-"9"])*>
+ | <NUM: (["0"-"9"])+>
+ | <DNUM: (["0"-"9"])+"."(["0"-"9"])+>
+ | <STR: ("\"" (~["\""] | "\\" "\"")* "\"")>
+}
+
+SKIP: { " " | "\t" | "\r" | "\n" }
+
+/*
+ | <NUM: (<DIGIT>)+>
+ | <ID: (<LETTER>)+>
+ | <#DIGIT: ["0"-"9"]>
+ | <#LETTER: ["a"-"z", "A"-"Z"]>
+*/
+
+/*
+
+program -> function ( program )?
+function -> header ( block )? "=" body
+header -> id "(" ( parlist )? ")"
+block -> "{" ( stmlist )? "}"
+body -> expr | eqlist
+parlist -> param ( "," parlist )?
+param -> id ("+" num)? | num
+eqlist -> "{" expr "," bexpr "}" ( eqlist )?
+stmlist -> stm ";" ( stmlist )?
+stm -> id "=" expr
+stm -> "print" "(" explist ")"
+explist -> expr ( "," explist )?
+expr -> ("+" | "-")? term ( ("+" | "-") term )*
+term -> power ( ("*" | "/" | "%") power )*
+power -> elem ( "^" power )?
+elem -> id ( "(" ( explist )? ")" )? | num | dnum
+elem -> str | "(" expr ")" | "ln" "(" expr ")"
+elem -> "log" "(" expr ")" | "exp" "(" expr ")"
+elem -> "sin" "(" expr ")" | "cos" "(" expr ")"
+elem -> "tan" "(" expr ")" | abs "(" expr ")"
+elem -> "sqrt" "(" expr ")" | "round" "(" expr ")"
+elem -> "drv" "(" fcall "," ( num "," )? id ")"
+fcall -> id "(" explist ")"
+bexpr -> and ( "||" and )*
+and -> not ( "&&" not )*
+not -> "!" "(" bexpr ")" | belem | "otherwise"
+belem -> expr boper expr
+boper -> "==" | "!=" | "<" | "<=" | ">=" | ">"
+
+*/
+
+Program Start() :
+{ Program prog; }
+{
+  prog=Program() <EOF> { return prog; }
+}
+
+Program Program() :
+{ Function def; Program prog = null; }
+{
+  def=Function() (prog=Program() )? { return new Program(def, prog); }
+}
+
+Function Function() :
+{ Header fn; Stm s=null; QList eq; Exp e; }
+{
+  fn=Header() ( s=Block() )? eq=Body()
+  { return new Function(fn, s, eq); }
+}
+
+Header Header() :
+{ Token t; EList eq = null; boolean b = false; }
+{
+  t=<ID> <LPAREN> (eq=Parlist() { b = true; })? <RPAREN> { return new Header(t.image, b ? eq : null); }
+}
+
+Stm Block() :
+{ Stm s=null; }
+{
+  <LCURLY> ( s=Stmlist() )? <RCURLY> { return s; }
+}
+
+QList Body() :
+{ Exp e; QList eq; }
+{
+    <AEQ> e=Expr()	{ return new QList(new BNum(true), e, null); }
+  | eq=Eqlist()		{ return eq; }
+}
+
+EList Parlist() :
+{ EList eq = null; Exp e; }
+{
+  e=Param() (<COMMA> eq=Parlist() )? { return new EList(e, eq); }
+}
+
+Exp Param() :
+{ Token t, t2; Exp e; }
+{
+    t=<ID> (<PLUS> t2=<NUM> { return new Plus(new Var(t.image), new Num(Integer.parseInt(t2.image))); })? { return new Var(t.image); }
+  | t=<NUM> { return new Num(Integer.parseInt(t.image)); }
+}
+
+QList Eqlist() :
+{ Exp e; BExp b; QList eq = null; }
+{
+  <GUARD> b=BExpr() <AEQ> e=Expr() ( eq=Eqlist() )?
+  { return new QList(b, e, eq); }
+}
+
+BExp BExpr() :
+{ BExp be1, be2; }
+{
+  be1=And() ( <OR> be2=And() { be1 = new OrExp(be1, be2); } )*
+  { return be1; }
+}
+
+BExp And() :
+{ BExp be1, be2; }
+{
+  be1=Not() ( <AND> be2=Not() { be1 = new AndExp(be1, be2); } )*
+  { return be1; }
+}
+
+BExp Not() :
+{ BExp be; }
+{
+    <NOT> <LPAREN> be=BExpr() <RPAREN> { return new NotExp(be); }
+  | be=Belem() { return be; }
+  | <OTHER> { return new BNum(true); }
+}
+
+BExp Belem() :
+{ Exp e1, e2; BExp be = null; }
+{
+  e1=Expr() (
+      <EQ> e2=Expr() { be = new EQExp(e1, e2); }
+    | <NE> e2=Expr() { be = new NEExp(e1, e2); }
+    | <LE> e2=Expr() { be = new LEExp(e1, e2); }
+    | <LT> e2=Expr() { be = new LTExp(e1, e2); }
+    | <GT> e2=Expr() { be = new GTExp(e1, e2); }
+    | <GE> e2=Expr() { be = new GEExp(e1, e2); }
+  )+
+  { return be; }
+}
+
+Stm Stmlist() :
+{ Stm a, b; }
+{
+  a=Stm() <SEMI> ( b=Stmlist() { a = new LStm(a,b); } )?
+   { return a; }
+}
+
+Stm Stm() :
+{ Token t; Exp e; BExp be; EList eq = null; }
+{
+    t=<ID> <AEQ> e=Expr() { return new AStm(t.image,e); }
+  | <PRINT> <LPAREN> ( eq=Explist() )? <RPAREN> { return new PStm(eq); }
+}
+
+EList Explist() :
+{ EList eq = null; Exp e; }
+{
+  e=Expr() ( <COMMA> eq=Explist() )? { return new EList(e, eq); }
+}
+
+Exp Expr() :
+{ Exp e1, e2; BExp b; int n=1; }
+{
+  ( <PLUS> | <MINUS> { n=-1; } )?
+    e1=Term() { if (n<0) e1=new Times(new Num(-1), e1); } (
+        <PLUS> e2=Term() { e1 = new Plus(e1, e2); }
+      | <MINUS> e2=Term() { e1 = new Minus(e1, e2); }
+    )* { return e1; }
+}
+
+Exp Term() :
+{ Exp e1, e2; }
+{
+  e1=Power() (
+      <TIMES> e2=Power() { e1 = new Times(e1, e2); }
+    | <DIVIDE> e2=Power() { e1 = new Divide(e1, e2); }
+    | <MOD> e2=Power() { e1 = new Mod(e1, e2); }
+  )*
+  { return e1; }
+}
+
+Exp Power() :
+{ Exp e1, e2; }
+{
+  e1=Elem() (
+      <POWER> e2=Power() { e1 = new Power(e1, e2); }
+  )?
+  { return e1; }
+}
+
+Exp Elem() :
+{ Token t; Exp e; EList eq = null; int n=1; }
+{
+    t=<ID> ( <LPAREN> ( eq=Explist() )? <RPAREN> { return new Header(t.image, eq); } )? { return new Var(t.image); }
+  | t=<NUM> { return new Num(Integer.parseInt(t.image)); }
+  | t=<DNUM> { return new DNum(Double.parseDouble(t.image)); }
+  | t=<STR> { return new Str(t.image.substring(1,t.image.length()-1)); }
+  | <LPAREN> e=Expr() <RPAREN> { return e; }
+  | <LN> <LPAREN> e=Expr() <RPAREN> { return new Ln(e); }
+  | <LOG> <LPAREN> e=Expr() <RPAREN> { return new Log(e); }
+  | <EXP> <LPAREN> e=Expr() <RPAREN> { return new Ep(e); }
+  | <SIN> <LPAREN> e=Expr() <RPAREN> { return new Sin(e); }
+  | <COS> <LPAREN> e=Expr() <RPAREN> { return new Cos(e); }
+  | <TAN> <LPAREN> e=Expr() <RPAREN> { return new Tan(e); }
+  | <ABS> <LPAREN> e=Expr() <RPAREN> { return new Abs(e); }
+  | <SQRT> <LPAREN> e=Expr() <RPAREN> { return new Sqrt(e); }
+  | <ROUND> <LPAREN> e=Expr() ("," t=<NUM> { n=Integer.parseInt(t.image)+1; })? <RPAREN>
+    { return new Round(e, n-1); }
+  | <DRV> <LPAREN> e=FCall() <COMMA> ( t=<NUM> { n=Integer.parseInt(t.image); } <COMMA> )? t=<ID> <RPAREN>
+    { return new DrvExp(e, n, t.image); }
+}
+
+Exp FCall() :
+{ Token t; EList eq = null; }
+{
+  t=<ID> <LPAREN> ( eq=Explist() )? <RPAREN> { return new Header(t.image, eq); }
+}
+
