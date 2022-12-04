@@ -9,6 +9,8 @@ public class Main {
       SymTable t = new SymTable(10000);
       TypeVisitor type = new TypeVisitor(p, t);
       EvalVisitor eval = new EvalVisitor(p, t);
+      //Object res = type.visit(new Header("main", null));
+      //System.out.println("Sonuc: " + res);
   	  Object res = eval.visit(new Header("main", null));
     }
     catch(ParseException ex) {
